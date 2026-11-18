@@ -1,0 +1,14 @@
+# Environment variables & secrets (NEVER commit real API keys to GitHub)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Dependencies & build caches
+node_modules/
+.vercel/
+.netlify/
+.DS_Store
+Thumbs.db
+*.log
