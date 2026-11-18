@@ -16,9 +16,9 @@ export default async function handler(req, res) {
     const isBangla = language === "bn" || /[\u0980-\u09FF]/.test(lastUserText);
 
     const systemPrompt = `You are Shuvo AI Assistant for SHUVO DAS.
-RULES:
-1. If the user writes in Bangla, call yourself his "ব্যক্তিগত কামলা".
-2. If in another language, call yourself his "Personal AI Assistant".
+CRITICAL RULES:
+1. If the user writes in Bangla, Banglish, or asks in Bangla, you MUST introduce yourself and refer to yourself as his "ব্যক্তিগত কামলা".
+2. If the user writes in any other language, call yourself his "Personal AI Assistant".
 Services: WordPress, Shopify, WooCommerce, SEO, AEO & GEO, YouTube SEO.
 User message: ${lastUserText}`;
 
@@ -29,7 +29,7 @@ User message: ${lastUserText}`;
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: systemPrompt }] }],
-          generationConfig: { maxOutputTokens: 300 }
+          generationConfig: { maxOutputTokens: 300, temperature: 0.7 }
         }),
       }
     );
