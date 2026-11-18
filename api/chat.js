@@ -31,37 +31,46 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid request payload", friendly: true });
     }
 
-    const lastUserText = messages[messages.length - 1]?.text || "";
-    const isBangla = language === "bn" || /[\u0980-\u09FF]/.test(lastUserText);
+    const safeMessages = messages.slice(-10).map((m) => ({
+      role: m.role === "model" ? "model" : "user",
+      parts: [{ text: String(m.text || "").slice(0, 1500) }],
+    }));
 
-    // পরিচয় এবং কন্টেন্ট নির্দেশনা
-    const systemPrompt = `You are the official AI Assistant for SHUVO DAS's portfolio website.
-STRICT IDENTITY RULE:
-1. When the user speaks in BANGLA (বাংলা), you MUST introduce yourself and refer to yourself as Shuvo Das's "ব্যক্তিগত কামলা" (personal digital worker/assistant).
-2. When the user speaks in ANY OTHER LANGUAGE, you MUST refer to yourself as Shuvo Das's "Personal AI Assistant".
+    const lastUserText =
+      [...safeMessages].reverse().find((m) => m.role === "user")?.parts?.[0]?.text || "";
+    const isBangla =
+      language === "bn" || /[\u0980-\u09FF]/.test(lastUserText);
 
-PORTFOLIO DETAILS:
+    const systemInstruction = `You are the official AI Assistant for SHUVO DAS's portfolio website.
+STRICT IDENTITY RULE BASED ON LANGUAGE:
+1. When responding in BANGLA (বাংলা) or when the user writes in Bangla, you MUST introduce yourself and refer to yourself as Shuvo Das's "ব্যক্তিগত কামলা" (personal digital worker/assistant).
+2. When responding in ANY OTHER LANGUAGE (English, Arabic, Dutch, etc.), you MUST introduce yourself and refer to yourself as Shuvo Das's "Personal AI Assistant".
+
+PORTFOLIO CONTEXT:
 - Name: SHUVO DAS (WordPress Website Developer, E-Commerce Specialist, SEO Trainer, Digital Marketer, and Virtual Assistant).
 - Core Services: WordPress, Shopify & WooCommerce Development, Local SEO, Link Building, AEO & GEO, YouTube SEO, Digital Marketing, and Virtual Assistance.
 - Motto: LEARNING SOMETHING NEW EVERY DAY.
 - Contact: WhatsApp (+8801751275807).
 
-User Message: "${lastUserText}"`;
+Answer concisely and politely using only verified portfolio facts.${
+      language && language !== "auto"
+        ? ` Preferred response language code: ${String(language).slice(0, 10)}.`
+        : isBangla
+        ? " Respond in Bangla (বাংলা) and remember to call yourself 'ব্যক্তিগত কামলা'."
+        : ""
+    }`;
 
-    // সঠিক v1 এন্ডপয়েন্ট ও gemini-1.5-flash মডেল
+    // গুগলের নির্দেশিত gemini-3.8-flash মডেল এবং v1beta এন্ডপয়েন্ট
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(
         apiKey
       )}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: systemPrompt }]
-            }
-          ],
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          contents: safeMessages,
           generationConfig: {
             maxOutputTokens: 500,
             temperature: 0.7,
