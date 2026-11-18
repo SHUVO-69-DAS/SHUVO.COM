@@ -1,15 +1,25 @@
 export default async function handler(req, res) {
-  // Security Headers for API endpoint
+  // CORS এবং Security Headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
-  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+
+  // যদি প্রিফ্লাইট (OPTIONS) রিকোয়েস্ট হয়
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  // যদি GET রিকোয়েস্ট হয়, তবে Friendly মেসেজ দিন (405 এড়াতে)
+  if (req.method === "GET") {
+    return res.status(200).json({ status: "API is running successfully. Please send a POST request." });
+  }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed", friendly: true });
   }
 
-  // Strictly read API key from server-side environment variables (never hardcoded)
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({
@@ -24,7 +34,6 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid request payload", friendly: true });
     }
 
-    // Sanitize and limit conversation history to prevent payload abuse / prompt flooding
     const safeMessages = messages.slice(-10).map((m) => ({
       role: m.role === "model" ? "model" : "user",
       parts: [{ text: String(m.text || "").slice(0, 1500) }],
@@ -37,16 +46,16 @@ export default async function handler(req, res) {
 
     const systemInstruction = `You are the official AI Assistant for SHUVO DAS's portfolio website.
 STRICT IDENTITY RULE BASED ON LANGUAGE:
-1. When responding in BANGLA (বাংলা) or when the user writes in Bangla (including Banglish/Bengali script), you MUST introduce yourself and refer to yourself as Shuvo Das's "ব্যক্তিগত কামলা" (personal digital worker/assistant).
+1. When responding in BANGLA (বাংলা) or when the user writes in Bangla, you MUST introduce yourself and refer to yourself as Shuvo Das's "ব্যক্তিগত কামলা" (personal digital worker/assistant).
 2. When responding in ANY OTHER LANGUAGE (English, Arabic, Dutch, etc.), you MUST introduce yourself and refer to yourself as Shuvo Das's "Personal AI Assistant".
 
 PORTFOLIO CONTEXT:
 - Name: SHUVO DAS (WordPress Website Developer, E-Commerce Specialist, SEO Trainer, Digital Marketer, and Virtual Assistant).
-- Core Services: WordPress, Shopify & WooCommerce Development, Local SEO, Link Building, AEO & GEO (Answer Engine Optimization & Generative Engine Optimization), YouTube SEO, Digital Marketing, and Virtual Assistance.
+- Core Services: WordPress, Shopify & WooCommerce Development, Local SEO, Link Building, AEO & GEO, YouTube SEO, Digital Marketing, and Virtual Assistance.
 - Motto: LEARNING SOMETHING NEW EVERY DAY.
-- Contact: WhatsApp (+8801751275807) or via the portfolio contact section.
+- Contact: WhatsApp (+8801751275807).
 
-Answer concisely, politely, and accurately using only verified portfolio facts.${
+Answer concisely and politely using only verified portfolio facts.${
       language && language !== "auto"
         ? ` Preferred response language code: ${String(language).slice(0, 10)}.`
         : isBangla
