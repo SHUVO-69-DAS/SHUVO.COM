@@ -1,19 +1,16 @@
 export default async function handler(req, res) {
-  // CORS এবং Security Headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
 
-  // যদি প্রিফ্লাইট (OPTIONS) রিকোয়েস্ট হয়
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  // যদি GET রিকোয়েস্ট হয়, তবে Friendly মেসেজ দিন (405 এড়াতে)
   if (req.method === "GET") {
-    return res.status(200).json({ status: "API is running successfully. Please send a POST request." });
+    return res.status(200).json({ status: "API is running successfully." });
   }
 
   if (req.method !== "POST") {
@@ -63,8 +60,9 @@ Answer concisely and politely using only verified portfolio facts.${
         : ""
     }`;
 
+    // gemini-1.5-flash মডেল ব্যবহার করা হয়েছে যা অত্যন্ত স্থিতিশীল ও ফাস্ট
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
         apiKey
       )}`,
       {
