@@ -60,7 +60,7 @@ Answer concisely and politely using only verified portfolio facts.${
         : ""
     }`;
 
-    // gemini-1.5-flash মডেল ব্যবহার করা হয়েছে যা অত্যন্ত স্থিতিশীল ও ফাস্ট
+    // সঠিক এন্ডপয়েন্ট ও gemini-1.5-flash মডেল ব্যবহার
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(
         apiKey
@@ -69,8 +69,12 @@ Answer concisely and politely using only verified portfolio facts.${
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents: safeMessages,
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: `System Instruction: ${systemInstruction}\n\nChat History / Message:\n` + JSON.stringify(safeMessages) }]
+            }
+          ],
           generationConfig: {
             maxOutputTokens: 500,
             temperature: 0.7,
