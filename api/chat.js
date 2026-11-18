@@ -8,7 +8,9 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "API key missing" });
+  if (!apiKey) {
+    return res.status(500).json({ error: "GEMINI_API_KEY is missing in environment variables." });
+  }
 
   try {
     const { messages, language } = req.body || {};
@@ -40,21 +42,13 @@ User message: ${lastUserText}`;
     const data = await apiRes.json();
     
     if (!apiRes.ok) {
-      return res.status(200).json({ reply: `API Error: ${data?.error?.message || "Gemini connection failed"}` });
+      return res.status(500).json({ error: data?.error?.message || "Gemini connection failed" });
     }
 
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "দুঃখিত, এখন উত্তর দিতে পারছি না।";
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "দুঃখিত, কোনো উত্তর পাওয়া যায়নি।";
 
     return res.status(200).json({ reply });
   } catch (err) {
-    return res.status(200).json({ reply: `Server Error: ${err.message}` });
+    return res.status(500).json({ error: "Server error" });
   }
 }
-```[cite: 17, 18]
-
-### এখনই যা করবেন:
-১. আপনার প্রজেক্টের `api/chat.js` ফাইলের কোডটি সম্পূর্ণ মুছে এই নতুন কোডটি বসিয়ে সেভ করুন।
-২. GitHub-এ কমিট (Commit) করে দিন।
-৩. Vercel ডিপ্লয় শেষ হওয়া মাত্র লাইভ সাইট (`shuvo-das.vercel.app`) রিফ্রেশ করে চ্যাটবটে মেসেজ দিন। 
-
-এবার কোনো এরর আসবে না এবং সরাসরি সঠিক উত্তর পেয়ে যাবেন!
